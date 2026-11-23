@@ -32,6 +32,8 @@
         <spring-cloud.version>2025.1.5</spring-cloud.version>
         <spring-modulith.version>2.0.10</spring-modulith.version>
         <testcontainers.version>2.0.5</testcontainers.version>
+        <!-- Same ArchUnit version that spring-modulith-core 2.0.x uses; avoids two ArchUnit versions on the test classpath. -->
+        <archunit.version>1.4.2</archunit.version>
 
         <spotless-maven-plugin.version>3.12.0</spotless-maven-plugin.version>
         <palantir-java-format.version>2.103.0</palantir-java-format.version>
@@ -56,6 +58,11 @@
                 <version>${spring-modulith.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>com.tngtech.archunit</groupId>
+                <artifactId>archunit-junit5</artifactId>
+                <version>${archunit.version}</version>
             </dependency>
             <dependency>
                 <groupId>org.testcontainers</groupId>
