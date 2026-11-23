@@ -1,0 +1,23 @@
+# Build output
+target/
+web/dist/
+web/coverage/
+web/playwright-report/
+web/test-results/
+
+# Dependencies
+node_modules/
+
+# Local secrets (template: infra/.env.example)
+infra/.env
+*.env.local
+
+# IDE and OS
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Claude Code local settings
+.claude/settings.local.json

@@ -1,0 +1,19 @@
+spring:
+  application:
+    name: marketplace-api
+  threads:
+    virtual:
+      # I/O-bound calls (database, Stripe, MinIO, OpenSearch) scale without reactive code.
+      enabled: true
+
+server:
+  port: ${SERVER_PORT:8090}
+
+management:
+  server:
+    # Actuator on its own port: the BFF and ingress never expose it (SPEC-platform, Security baseline).
+    port: ${MANAGEMENT_PORT:8091}
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
