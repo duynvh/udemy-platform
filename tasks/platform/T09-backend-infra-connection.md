@@ -8,7 +8,7 @@ Phase 2 · Size M · Dependencies: T02, T06
 - [ ] `application.yml` reads connection values from environment variables with local defaults (Compose ports).
 - [ ] Flyway runs from `classpath:db/migration/{module}`; a baseline script `V0__baseline.sql` creates schema `shared`.
 - [ ] `TestcontainersConfiguration` defines `@ServiceConnection` beans for PostgreSQL (`docker.io/pgvector/pgvector:pg18`), Kafka (`docker.io/apache/kafka`), Valkey; containers are reused across test classes.
-- [ ] Testcontainers works with Podman: `%USERPROFILE%\.testcontainers.properties` has `docker.host=npipe:////./pipe/podman-machine-default` (or "Docker compatibility" is on in Podman Desktop). The Podman machine is rootful, so Ryuk runs. If Ryuk still fails, set `TESTCONTAINERS_RYUK_DISABLED=true` as a last resort; then remove left-over containers by hand.
+- [ ] Testcontainers works with Podman. Result: rootless Podman works through `npipe:////./pipe/docker_engine` without `.testcontainers.properties`, and Ryuk runs. Fallback only if Ryuk fails: `TESTCONTAINERS_RYUK_DISABLED=true`.
 - [ ] Spring Modulith event publication registry (JDBC) is on; its table is created by Flyway.
 
 **Verification** (run in `backend/`):

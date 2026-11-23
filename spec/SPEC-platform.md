@@ -60,7 +60,7 @@ Load test:       podman compose -f infra/compose.yaml --profile tools run --rm k
 The developer machine (Windows) uses Podman 6 with the WSL provider, not Docker. `podman compose` reads `infra/compose.yaml` through the compose provider `podman-compose` (Python).
 
 ```text
-podman machine init --cpus 6 --memory 12288 --rootful
+podman machine init --cpus 6 --memory 12288
 podman machine start
 pip install --user podman-compose
 # Add %APPDATA%\Python\Python3xx\Scripts to the user PATH, then: podman compose version
@@ -71,9 +71,9 @@ pip install --user podman-compose
 - Podman exposes the Docker API on `npipe:////./pipe/docker_engine`, so Docker API clients find it without `DOCKER_HOST`.
 - All published ports bind to `127.0.0.1`: the services are not reachable from the local network.
 
-- Rootful mode lets the Testcontainers Ryuk container and host port binding work.
-- Testcontainers uses the Docker API. Set `docker.host=npipe:////./pipe/podman-machine-default` in `%USERPROFILE%\.testcontainers.properties`, or enable "Docker compatibility" in Podman Desktop.
-- If Ryuk fails, set the environment variable `TESTCONTAINERS_RYUK_DISABLED=true`. This is the last resort: the test run then does not remove its containers.
+- Rootless mode is enough (verified in T09): Testcontainers finds Podman through `npipe:////./pipe/docker_engine` without any configuration, and the Ryuk cleanup container works.
+- Testcontainers images must be declared compatible when the name is fully qualified: `DockerImageName.parse("docker.io/apache/kafka:4.1.1").asCompatibleSubstituteFor("apache/kafka")`.
+- If Ryuk fails on another machine, set `TESTCONTAINERS_RYUK_DISABLED=true`. This is the last resort: the test run then does not remove its containers.
 - Every image name in `compose.yaml` is fully qualified (`docker.io/...`, `quay.io/...`). Podman can ask which registry to use for a short name.
 - File names stay `Dockerfile`. Podman reads them.
 

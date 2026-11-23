@@ -1,10 +1,31 @@
 spring:
   application:
     name: marketplace-api
+  profiles:
+    # "local" connects to the Podman Compose stack (application-local.yml). Tests activate "test" instead.
+    default: local
   threads:
     virtual:
-      # I/O-bound calls (database, Stripe, MinIO, OpenSearch) scale without reactive code.
+      # I/O-bound calls (database, Stripe, RustFS, OpenSearch) scale without reactive code.
       enabled: true
+  jpa:
+    # No lazy loading during view rendering: each use case loads what it needs inside its transaction.
+    open-in-view: false
+    hibernate:
+      # Flyway owns the schema; Hibernate only checks that entities match it.
+      ddl-auto: validate
+  flyway:
+    # History table in its own schema; every migration names its target schema explicitly.
+    default-schema: flyway
+    create-schemas: true
+    locations: classpath:db/migration
+  modulith:
+    events:
+      jdbc:
+        schema: shared
+        # The table comes from Flyway (db/migration/shared/V1__event_publication.sql).
+        schema-initialization:
+          enabled: false
 
 server:
   port: ${SERVER_PORT:8090}

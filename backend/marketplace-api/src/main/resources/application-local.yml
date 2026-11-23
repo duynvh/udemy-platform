@@ -1,0 +1,23 @@
+# Profile "local" (default): the backend runs on the host and uses the Podman Compose stack.
+# Credentials come from infra/.env, the same file compose reads; nothing secret is stored here.
+# The path is relative to the working directory of "./mvnw -pl marketplace-api spring-boot:run" (backend/marketplace-api).
+# Environment variables with the same names override the file.
+spring:
+  config:
+    import: optional:file:../../infra/.env[.properties]
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/marketplace
+    username: ${MARKETPLACE_DB_USER}
+    password: ${MARKETPLACE_DB_PASSWORD}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
+    security:
+      protocol: SASL_PLAINTEXT
+    properties:
+      sasl.mechanism: PLAIN
+      sasl.jaas.config: org.apache.kafka.common.security.plain.PlainLoginModule required username="marketplace" password="${KAFKA_APP_PASSWORD}";
+  data:
+    redis:
+      host: ${VALKEY_HOST:localhost}
+      port: ${VALKEY_PORT:6379}
+      password: ${VALKEY_PASSWORD}

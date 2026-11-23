@@ -16,8 +16,8 @@ A task is done only when its learning note `docs/learn/platform/<task file name>
 - [x] [T06 Compose data stores](platform/T06-compose-data-stores.md) · note: [docs/learn/platform/T06-compose-data-stores.md](../docs/learn/platform/T06-compose-data-stores.md)
 - [x] [T07 Keycloak with minimal realm](platform/T07-keycloak-minimal-realm.md) · note: [docs/learn/platform/T07-keycloak-minimal-realm.md](../docs/learn/platform/T07-keycloak-minimal-realm.md)
 - [x] [T08 RustFS buckets init](platform/T08-rustfs-init.md) · note: [docs/learn/platform/T08-rustfs-init.md](../docs/learn/platform/T08-rustfs-init.md)
-- [ ] [T09 Backend connects to infrastructure](platform/T09-backend-infra-connection.md)
-- [ ] **Checkpoint 2:** all services healthy < 3 min · Flyway runs · Testcontainers IT passes · human review
+- [x] [T09 Backend connects to infrastructure](platform/T09-backend-infra-connection.md) · note: [docs/learn/platform/T09-backend-infra-connection.md](../docs/learn/platform/T09-backend-infra-connection.md)
+- [ ] **Checkpoint 2:** ~~all services healthy < 3 min~~ ✓ (~40 s) · ~~Flyway runs~~ ✓ · ~~Testcontainers IT passes~~ ✓ · human review (open)
 
 ## Phase 3: Observability
 - [ ] [T10 Metrics path](platform/T10-metrics-path.md)

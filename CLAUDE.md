@@ -28,8 +28,9 @@ Spec-driven, gated: spec → plan → tasks → implement, with human approval a
 Run Maven commands in `backend/`. On Windows use `mvnw.cmd` in place of `./mvnw`. The local container engine is Podman, not Docker.
 
 ```text
-podman machine init --cpus 6 --memory 12288 --rootful   # once; rootful lets Testcontainers Ryuk and port binding work
-podman machine start
+podman machine init --cpus 6 --memory 12288   # once; rootless works (Testcontainers verified in T09)
+podman machine start                           # stale "Currently starting"? podman machine stop, then start
+podman compose -f infra/compose.yaml run --rm rustfs-init   # buckets; one-shot (never attached "up" for jobs)
 podman compose -f infra/compose.yaml up -d          # local infrastructure (needs infra/.env from .env.example)
 cd backend
 ./mvnw -pl marketplace-api spring-boot:run          # backend: API 8090, actuator 8091
@@ -45,7 +46,9 @@ npm --prefix frontend run api:generate              # Orval client from backend/
 npm --prefix frontend test -- src/path/File.test.tsx   # single Vitest file
 ```
 
-Testcontainers with Podman: set `docker.host=npipe:////./pipe/podman-machine-default` in `%USERPROFILE%\.testcontainers.properties` (or enable "Docker compatibility" in Podman Desktop). If Ryuk fails, set `TESTCONTAINERS_RYUK_DISABLED=true` as a last resort; then containers are not removed automatically.
+- Testcontainers finds Podman through `npipe:////./pipe/docker_engine` with no configuration. Fully qualified images need `asCompatibleSubstituteFor(...)`. Shared containers: `backend/marketplace-api/src/test/java/com/marketplace/TestcontainersConfiguration.java`.
+- Profiles: `local` (default) reads `infra/.env` through `spring.config.import` and uses Kafka SASL and the Valkey password; integration tests use `@ActiveProfiles("test")` with Testcontainers (no auth). Run the backend from `backend/marketplace-api` so the relative `.env` path works (`spring-boot:run` does this).
+- Flyway: one folder per module under `db/migration/<module>`, history table in schema `flyway`, migrations always name their schema. Versions are global across modules.
 
 ## Architecture (big picture)
 
