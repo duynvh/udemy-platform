@@ -16,7 +16,7 @@ The other module specs inherit the **Code Style**, **Testing Strategy**, and **B
 | Framework | Spring Boot, Spring Modulith | 4.0.x, 2.0.x |
 | Gateway | Spring Cloud Gateway Server Web MVC | Spring Cloud 2025.1.x |
 | Build | Maven Wrapper | 3.9.x |
-| Local container engine | Podman (with a compose provider) | 5 |
+| Local container engine | Podman (WSL machine) + podman-compose | Podman 6.0, podman-compose 1.6 |
 | Frontend | React, TypeScript, MUI, Vite | 19, 5.x, 7, 7 |
 | Frontend libs | TanStack Query, React Router, React Hook Form, Zod, Orval, hls.js | latest stable at S1 start |
 | Node | Node.js LTS | 24 |
@@ -24,9 +24,9 @@ The other module specs inherit the **Code Style**, **Testing Strategy**, and **B
 | Messaging | Apache Kafka (KRaft) | 4.1 |
 | Cache | Valkey (Redis API) | 8 |
 | Search | OpenSearch | 3 |
-| Object storage | MinIO (S3 API) | latest release at S1 start |
+| Object storage | RustFS (S3 API) | 1.0.6 (`docker.io/rustfs/rustfs:1.0.6`) |
 | Identity | Keycloak | 26 |
-| Email (local) | Mailpit | latest |
+| Email (local) | Mailpit | v1.34.0 |
 | Observability | Grafana Alloy, Prometheus, Tempo, Loki, Grafana | latest stable at S1 start |
 | Load test | Grafana k6 | latest |
 
@@ -57,12 +57,19 @@ Load test:       podman compose -f infra/compose.yaml --profile tools run --rm k
 
 ## Local container engine
 
-The developer machine (Windows) uses Podman 5, not Docker. `podman compose` reads the same `infra/compose.yaml` through a compose provider.
+The developer machine (Windows) uses Podman 6 with the WSL provider, not Docker. `podman compose` reads `infra/compose.yaml` through the compose provider `podman-compose` (Python).
 
 ```text
 podman machine init --cpus 6 --memory 12288 --rootful
 podman machine start
+pip install --user podman-compose
+# Add %APPDATA%\Python\Python3xx\Scripts to the user PATH, then: podman compose version
 ```
+
+- WSL provider: the machine memory comes from WSL (`%USERPROFILE%\.wslconfig`), not from `--memory`. Check with `podman info --format "{{.Host.MemTotal}}"`; the stack needs about 4 GB in Phase 2 and 8 GB with observability.
+- If `podman machine list` shows "Currently starting" but `wsl -l -v` shows the machine "Stopped", the state is stale: run `podman machine stop`, then `podman machine start`.
+- Podman exposes the Docker API on `npipe:////./pipe/docker_engine`, so Docker API clients find it without `DOCKER_HOST`.
+- All published ports bind to `127.0.0.1`: the services are not reachable from the local network.
 
 - Rootful mode lets the Testcontainers Ryuk container and host port binding work.
 - Testcontainers uses the Docker API. Set `docker.host=npipe:////./pipe/podman-machine-default` in `%USERPROFILE%\.testcontainers.properties`, or enable "Docker compatibility" in Podman Desktop.
@@ -83,7 +90,7 @@ podman machine start
 | Kafka | 9092 | |
 | Valkey | 6379 | |
 | OpenSearch | 9200 | |
-| MinIO | 9000 / 9001 | S3 API / console |
+| RustFS | 9000 / 9001 | S3 API / web console |
 | Mailpit | 8025 / 1025 | Web UI / SMTP |
 | Grafana | 3000 | Prometheus, Tempo, Loki are data sources |
 
@@ -216,7 +223,7 @@ flowchart LR
 - Every container uses a non-root user and a pinned image tag.
 - Every image name in `compose.yaml` is fully qualified (`docker.io/...`, `quay.io/...`). Podman does not resolve short names without a question.
 - `infra/.env.example` holds all secrets with dummy values. `infra/.env` is in `.gitignore`.
-- Kafka, Valkey, OpenSearch, MinIO, PostgreSQL require a password, also locally.
+- Kafka, Valkey, OpenSearch, RustFS, PostgreSQL require a password, also locally. RustFS reads its credentials from `RUSTFS_ACCESS_KEY` and `RUSTFS_SECRET_KEY`.
 - Actuator is on the management port only. Exposed endpoints: `health`, `info`, `prometheus`.
 - One Problem Details handler in `shared`. No stack trace in responses.
 

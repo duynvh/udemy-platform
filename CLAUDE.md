@@ -55,7 +55,7 @@ Testcontainers with Podman: set `docker.host=npipe:////./pipe/podman-machine-def
 - **Hexagonal per module:** `api/` (public contract for other modules), `domain/` (pure Java, no Spring/JPA/Kafka/Jackson — ArchUnit fails the build), `application/port/in|out` + `service/`, `adapter/in|out`. Reference implementation: `docs/architecture.md` §9.
 - **Module communication:** only through another module's `api` package or Kafka events. Each module owns its PostgreSQL schema and never reads another module's tables. Events go through the Spring Modulith outbox (`@Externalized`) to Kafka topics `<module>.<aggregate>.v1`.
 - **Dependency inversions to keep** (see `spec/capability-map.md`): categories belong to `authoring`; `checkout` declares `CourseConsumptionProvider` and `learning` implements it; `learning` checks access, then calls `media.api.PlaybackApi`; `catalog` builds its OpenSearch read model through `authoring.api.PublishedCourseQuery`.
-- **Data stores:** PostgreSQL (truth), Valkey (cache, cart, sessions, rate limits), OpenSearch (search read model), MinIO (S3 API only; browser uploads directly with presigned URLs).
+- **Data stores:** PostgreSQL (truth), Valkey (cache, cart, sessions, rate limits), OpenSearch (search read model), RustFS (S3 API only; browser uploads directly with presigned URLs).
 - **Observability:** OTLP → Grafana Alloy → Tempo (traces), Loki (logs), Prometheus (metrics), Grafana. Business metrics go through an outbound port (e.g. `CheckoutMetricsPort`), not Micrometer in the domain. No user ids or emails as metric labels.
 
 ## Project conventions not in the global rules

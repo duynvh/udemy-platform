@@ -13,9 +13,9 @@ A task is done only when its learning note `docs/learn/platform/<task file name>
 - [ ] **Checkpoint 1:** `./mvnw verify` passes · health `UP` · human review
 
 ## Phase 2: Infrastructure
-- [ ] [T06 Compose data stores](platform/T06-compose-data-stores.md)
+- [x] [T06 Compose data stores](platform/T06-compose-data-stores.md) · note: [docs/learn/platform/T06-compose-data-stores.md](../docs/learn/platform/T06-compose-data-stores.md)
 - [ ] [T07 Keycloak with minimal realm](platform/T07-keycloak-minimal-realm.md)
-- [ ] [T08 MinIO buckets init](platform/T08-minio-init.md)
+- [ ] [T08 RustFS buckets init](platform/T08-rustfs-init.md)
 - [ ] [T09 Backend connects to infrastructure](platform/T09-backend-infra-connection.md)
 - [ ] **Checkpoint 2:** all services healthy < 3 min · Flyway runs · Testcontainers IT passes · human review
 

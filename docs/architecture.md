@@ -13,7 +13,7 @@
 
 - **Frontend:** React + TypeScript + Material UI (MUI), built with Vite.
 - **Backend:** Java 25 + Spring Boot 4, one modular monolith. Each module uses Hexagonal Architecture (ports and adapters).
-- **Data:** PostgreSQL is the source of truth. Redis caches. OpenSearch searches. MinIO stores files and video.
+- **Data:** PostgreSQL is the source of truth. Redis caches. OpenSearch searches. RustFS stores files and video.
 - **Integration:** Kafka carries domain events between modules and to external consumers. The transactional outbox makes sure that no event is lost.
 - **Identity:** Keycloak issues OpenID Connect (OIDC) tokens. The backend is an OAuth2 resource server.
 - **AI:** Spring AI with pgvector gives course Q&A assistant, semantic search, and content moderation.
@@ -36,7 +36,7 @@ Section 9 gives a full CRUD example for the `Course` entity.
 | Messaging | Apache Kafka 4 (KRaft mode, no ZooKeeper) | Domain events: `CoursePublished`, `OrderPaid`, `LectureCompleted` |
 | Cache | Redis 8 (or Valkey 8) | Course page cache, cart, rate limits, sessions |
 | Search | OpenSearch 3 | Catalog search, filters, typo tolerance (US-3.1, US-3.2) |
-| Object storage | MinIO (S3 API) | Raw uploads, HLS segments, attachments, certificates |
+| Object storage | RustFS (S3 API) | Raw uploads, HLS segments, attachments, certificates |
 | Identity | Keycloak 26 | Sign up, log in, Google login, roles (E1) |
 | AI | Spring AI 1.x | Q&A assistant, semantic search, moderation |
 
@@ -47,7 +47,7 @@ Group A — backend platform
 | Technology | Why |
 |---|---|
 | **Spring Modulith** | Enforces module boundaries in the monolith. Gives the event publication registry (outbox) and module tests. |
-| **Virtual threads (Project Loom)** | High concurrency for I/O calls (Stripe, MinIO, OpenSearch) without reactive code. One property: `spring.threads.virtual.enabled=true`. |
+| **Virtual threads (Project Loom)** | High concurrency for I/O calls (Stripe, RustFS, OpenSearch) without reactive code. One property: `spring.threads.virtual.enabled=true`. |
 | **GraalVM native image** (optional) | Fast start and low memory for small workers (video webhook, notification sender). |
 | **Flyway** | Versioned database migrations. |
 | **MapStruct** | Compile-time mapping between domain, JPA entities, and DTOs. No reflection. |
@@ -65,7 +65,7 @@ Group C — quality and operations
 
 | Technology | Why |
 |---|---|
-| **Testcontainers** | Integration tests with real PostgreSQL, Kafka, Redis, OpenSearch, MinIO, Keycloak. |
+| **Testcontainers** | Integration tests with real PostgreSQL, Kafka, Redis, OpenSearch, RustFS, Keycloak. RustFS runs as a GenericContainer with `docker.io/rustfs/rustfs:1.0.6`. |
 | **ArchUnit** | Tests that fail the build when a domain class imports Spring or JPA. |
 | **OpenTelemetry + Prometheus, Grafana, Tempo, Loki** | Metrics, traces, logs in one Grafana UI. Structured JSON logs. Section 11. |
 | **Semgrep / CodeQL, OWASP ZAP, Gitleaks** | Static scan, dynamic scan, secret scan in CI. Section 6. |
@@ -96,7 +96,7 @@ Group E — delivery
 
 | Risk | Mitigation |
 |---|---|
-| MinIO community edition is in maintenance mode (since late 2025); the admin console was removed. | Use only the S3 API through the `FileStoragePort` adapter. Switch to AWS S3, SeaweedFS, or Garage without domain change. |
+| RustFS is young (1.0 in 2026). It replaced MinIO: the MinIO community edition went into maintenance mode in 2025, and its Docker Hub images are no longer published. | Use only the S3 API, behind ports (`FileStoragePort`, `AvatarStoragePort`). Switch to AWS S3, SeaweedFS, or Garage without domain change. |
 | Redis license changed (RSAL/SSPL, AGPL from Redis 8). | Valkey 8 is a drop-in, BSD-licensed alternative. The cache adapter hides the choice. |
 | AI provider cost and data privacy. | Spring AI abstracts the provider. Start with a hosted model; keep the option of a self-hosted model through Ollama. |
 
@@ -113,7 +113,7 @@ flowchart LR
     FE --> BE["BE Backend<br/>Spring Boot modular monolith"]
     BE --> DATA["DATA Data stores<br/>Postgres, Redis, OpenSearch"]
     BE --> MQ["MQ Kafka<br/>Domain events"]
-    BE --> OBJ["OBJ MinIO + CDN<br/>Video and files"]
+    BE --> OBJ["OBJ RustFS + CDN<br/>Video and files"]
     BE --> EXT["EXT External services<br/>Stripe, Mux, email, AI model"]
 ```
 
@@ -148,7 +148,7 @@ The domain is in the center. It has no dependency on Spring, JPA, Kafka, or HTTP
 - **Inbound port (driving):** a use case that the outside world calls. Example: `CreateCourseUseCase`.
 - **Outbound port (driven):** a service that the domain needs. Example: `CourseRepository`.
 - **Inbound adapter:** REST controller, Kafka listener, scheduled job.
-- **Outbound adapter:** JPA repository, Kafka publisher, OpenSearch client, MinIO client, Redis cache.
+- **Outbound adapter:** JPA repository, Kafka publisher, OpenSearch client, S3 client (RustFS), Redis cache.
 
 Dependencies always point inward: `adapter → application → domain`.
 
@@ -164,7 +164,7 @@ flowchart LR
     OUT1["OUT1 JPA adapter<br/>Postgres"] --> P2
     OUT2["OUT2 Event adapter<br/>Outbox to Kafka"] --> P2
     OUT3["OUT3 Cache adapter<br/>Redis"] --> P2
-    OUT4["OUT4 Storage adapter<br/>MinIO"] --> P2
+    OUT4["OUT4 Storage adapter<br/>S3 API (RustFS)"] --> P2
 ```
 
 Arrow direction = compile-time dependency. Adapters depend on ports. Ports never depend on adapters.
@@ -268,7 +268,7 @@ Key = aggregate id, so that events for one course stay in order.
 | `ratelimit:{ip}:{route}` | Request counter | 1 min |
 | `video:token:{userId}:{lectureId}` | Signed URL cache | 5 min |
 
-### 5.4 MinIO buckets
+### 5.4 RustFS buckets
 
 | Bucket | Content | Access |
 |---|---|---|
@@ -277,7 +277,7 @@ Key = aggregate id, so that events for one course stay in order.
 | `attachments` | PDF, code files | Private. Presigned GET URL for enrolled students. |
 | `public-assets` | Course images, avatars | Public read through CDN. |
 
-The browser uploads video directly to MinIO with a presigned URL. The backend does not stream 4 GB files.
+The browser uploads video directly to RustFS with an S3 presigned URL. The backend does not stream 4 GB files.
 
 ---
 
@@ -302,7 +302,7 @@ flowchart LR
 | A01 Broken Access Control | Role check (`@PreAuthorize`) at the adapter. Owner check in the domain (`Course.requireOwner`). Deny by default. Test for each endpoint: "other user gets 403". |
 | A02 Security Misconfiguration | Actuator endpoints on a separate management port, not public. Security headers: CSP, HSTS, `frame-ancestors 'none'`, `X-Content-Type-Options`. No default passwords in any container. |
 | A03 Software Supply Chain Failures | SBOM (CycloneDX) per build. Trivy image scan. Renovate updates. Images signed with Sigstore cosign; the cluster accepts only signed images. |
-| A04 Cryptographic Failures | TLS everywhere, also Kafka, Redis, OpenSearch, PostgreSQL. Encryption at rest: disk encryption, MinIO SSE-KMS. Passwords stay in Keycloak (argon2/PBKDF2). |
+| A04 Cryptographic Failures | TLS everywhere, also Kafka, Redis, OpenSearch, PostgreSQL. Encryption at rest: disk encryption, S3 server-side encryption (SSE) with a KMS key. Passwords stay in Keycloak (argon2/PBKDF2). |
 | A05 Injection | JPA parameter binding only. Bean Validation on every request. Zod on the frontend. OpenSearch queries built with the typed client, not string concatenation. |
 | A06 Insecure Design | Threat model (STRIDE) per epic before Sprint start. Refund and coupon abuse rules in the domain. |
 | A07 Authentication Failures | Keycloak brute-force detection. MFA (TOTP or passkeys) required for `instructor`, `admin`, `finance`. Access token 5 min, refresh token rotation. |
@@ -316,7 +316,7 @@ flowchart LR
 |---|---|
 | Browser tokens | Recommended: Backend-for-Frontend (BFF) with Spring Cloud Gateway token relay. The browser holds only an `HttpOnly`, `SameSite=Strict` session cookie, not the JWT (OAuth 2.0 for Browser-Based Apps BCP). |
 | Rate limits | Bucket4j with Redis: login, search, checkout, AI assistant. 429 with `Retry-After`. |
-| Video protection | Signed CDN URLs, 5 min life, bound to the user. No direct MinIO access from the browser except presigned upload. |
+| Video protection | Signed CDN URLs, 5 min life, bound to the user. No direct RustFS access from the browser except presigned upload. |
 | Secrets | Vault (or OpenBao) + External Secrets Operator. Gitleaks blocks a commit with a secret. |
 | Network | Kubernetes NetworkPolicy: deny all, then allow per service. Kafka ACL per module (a module writes only its own topics). |
 | Personal data | GDPR: data export and erase per module on `UserDeleted`. No personal data in logs, metric labels, or AI prompts (redact before the call). |
@@ -376,7 +376,7 @@ SecurityFilterChain apiSecurity(HttpSecurity http) throws Exception {
 | Semantic search | E3 (US-3.1) | Hybrid: OpenSearch keyword score + vector score (OpenSearch k-NN or pgvector). |
 | Content moderation | E9, E6 | Classify reviews and questions as abusive or not; send hits to the admin queue. |
 | Course description helper | E2 (US-2.7) | Generate draft description and learning goals from the curriculum. |
-| Transcript and captions | NFR accessibility | Speech-to-text on upload; store WebVTT in MinIO. |
+| Transcript and captions | NFR accessibility | Speech-to-text on upload; store WebVTT in RustFS. |
 
 AI is an outbound port, like any other adapter:
 
@@ -959,7 +959,7 @@ flowchart LR
     DEV --> KF["KF kafka<br/>apache/kafka (KRaft)"]
     DEV --> RD["RD redis<br/>redis or valkey"]
     DEV --> OS["OS opensearch<br/>+ dashboards"]
-    DEV --> MN["MN minio<br/>S3 API on 9000"]
+    DEV --> MN["MN rustfs<br/>S3 API on 9000, console on 9001"]
     DEV --> KC["KC keycloak<br/>realm import on start"]
     DEV --> OB["OB observability<br/>Alloy, Prometheus, Tempo, Loki, Grafana"]
 ```
@@ -1088,7 +1088,7 @@ Label rule: labels have low cardinality (currency, status, reason). Never use us
 |---|---|
 | Service overview | RED per module: rate, errors, duration. JVM, virtual threads, HikariCP pool. |
 | Business | Orders, revenue, refunds, enrollments, published courses (plan Section 2 metrics). |
-| Data stores | PostgreSQL (postgres_exporter), Redis hit ratio, OpenSearch query time, MinIO usage. |
+| Data stores | PostgreSQL (postgres_exporter), Redis hit ratio, OpenSearch query time, RustFS usage. |
 | Kafka | Topic throughput, consumer lag per module, outbox backlog. |
 | Security | Failed logins (Keycloak events), 401/403/429 rates, admin actions from the audit log. |
 | AI | Token use and cost per day, latency, error rate per model (Spring AI observations). |
@@ -1108,7 +1108,7 @@ Label rule: labels have low cardinality (currency, status, reason). Never use us
 |---|---|
 | S1 | Repository, CI with security gates, `compose.yaml`, Keycloak realm + MFA, identity module, ArchUnit + Modulith tests, observability stack + service overview dashboard |
 | S2 | Authoring module: `Course` CRUD (Section 9), sections, lectures |
-| S3 | MinIO presigned upload, video transcode worker, `media.video.v1` topic |
+| S3 | S3 presigned upload (RustFS), video transcode worker, `media.video.v1` topic |
 | S4 | Catalog module: OpenSearch index, Redis course page cache |
 | S5 | Checkout module: Stripe adapter, `checkout.order.v1`, outbox |
 | S6 | Learning module: HLS player, progress; admin approval; SLO alerts; OWASP ZAP scan; penetration test; load test |
@@ -1124,7 +1124,7 @@ AI features (Section 7) start in Release 2, together with E7 Q&A.
 3. ADR-003 Transactional outbox (Spring Modulith event registry) for Kafka events.
 4. ADR-004 Keycloak as identity provider; backend as OAuth2 resource server.
 5. ADR-005 pgvector for embeddings in Release 2; re-evaluate at 10 million vectors.
-6. ADR-006 S3 API only for object storage; MinIO is replaceable.
+6. ADR-006 S3 API only for object storage; RustFS locally (replaced MinIO), any S3 store in production.
 7. ADR-007 Backend-for-Frontend for browser tokens, not tokens in JavaScript.
 8. ADR-008 OpenTelemetry for all signals; Prometheus, Tempo, Loki, Grafana as backends.
 
@@ -1133,4 +1133,4 @@ AI features (Section 7) start in Release 2, together with E7 Q&A.
 1. Is a self-hosted Keycloak accepted, or is a managed identity service preferred?
 2. Which AI model provider is allowed for student data (data residency, GDPR)?
 3. Is Kubernetes in scope for Release 1, or is a managed container service (ECS, Cloud Run) enough?
-4. Video transcode: managed service (Mux) or self-hosted FFmpeg worker writing to MinIO?
+4. Video transcode: managed service (Mux) or self-hosted FFmpeg worker writing to RustFS?

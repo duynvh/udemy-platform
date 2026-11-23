@@ -25,7 +25,7 @@ Each task is in its own file in [`tasks/platform/`](platform/). The checklist is
 
 ```mermaid
 flowchart LR
-    P1["P1 Build skeleton<br/>T01-T05<br/>Maven, backend, kernel, rules"] --> P2["P2 Infrastructure<br/>T06-T09<br/>Compose, Keycloak, MinIO, Testcontainers"]
+    P1["P1 Build skeleton<br/>T01-T05<br/>Maven, backend, kernel, rules"] --> P2["P2 Infrastructure<br/>T06-T09<br/>Compose, Keycloak, RustFS, Testcontainers"]
     P2 --> P3["P3 Observability<br/>T10-T12<br/>Metrics, traces, logs, dashboards"]
     P3 --> P4["P4 Edge and web<br/>T13-T18<br/>BFF, worker, web shell, Orval, Playwright"]
     P4 --> P5["P5 CI and security<br/>T19-T22<br/>Pipeline, scans, images, k6"]
@@ -45,8 +45,8 @@ flowchart LR
 
 ```mermaid
 flowchart LR
-    T06["T06 Compose data stores<br/>Postgres, Valkey, Kafka, OpenSearch, MinIO, Mailpit"] --> T07["T07 Keycloak<br/>Minimal realm import"]
-    T06 --> T08["T08 MinIO init<br/>Buckets, CORS, lifecycle"]
+    T06["T06 Compose data stores<br/>Postgres, Valkey, Kafka, OpenSearch, RustFS, Mailpit"] --> T07["T07 Keycloak<br/>Minimal realm import"]
+    T06 --> T08["T08 RustFS init<br/>Buckets, CORS, lifecycle"]
     T06 --> T09["T09 Backend to infra<br/>Datasource, Flyway, Testcontainers"]
     T02["T02 Backend app<br/>From Phase 1"] --> T09
 ```
@@ -99,7 +99,7 @@ flowchart LR
 ### Phase 2: Infrastructure
 - [ ] [T06 Compose data stores](platform/T06-compose-data-stores.md) — M
 - [ ] [T07 Keycloak with minimal realm](platform/T07-keycloak-minimal-realm.md) — S
-- [ ] [T08 MinIO buckets init](platform/T08-minio-init.md) — S
+- [ ] [T08 RustFS buckets init](platform/T08-rustfs-init.md) — S
 - [ ] [T09 Backend connects to infrastructure](platform/T09-backend-infra-connection.md) — M
 
 ### Checkpoint 2: Infrastructure
@@ -162,7 +162,7 @@ Must be sequential: changes to `infra/compose.yaml` (T06 → T07 → T08 → T10
 | Testcontainers on Podman (Ryuk, Docker API socket) | Medium | Rootful Podman machine; `docker.host` in `.testcontainers.properties`; `TESTCONTAINERS_RYUK_DISABLED=true` as last resort (T09). |
 | Windows line endings break shell scripts in containers | Medium | `.gitattributes` with `*.sh text eol=lf` in T01. |
 | Gitleaks and CI need a Git repository; the workspace is not one | Medium | T19–T20 are written but verified only after the user runs `git init` and pushes. |
-| MinIO image licensing and maintenance | Low | Only the S3 API is used; a replacement is a Compose change. |
+| RustFS is young (1.0 in 2026). It replaced MinIO: the MinIO community edition went into maintenance mode in 2025, and its Docker Hub images are no longer published. | Low | Only the S3 API is used, behind ports (`FileStoragePort`, `AvatarStoragePort`). AWS S3, SeaweedFS, or Garage stay possible as a Compose change. |
 | Jib base image for the worker needs FFmpeg | Low | T21 uses a pinned base image with FFmpeg, or a Dockerfile for the worker only. |
 
 ## Open Questions

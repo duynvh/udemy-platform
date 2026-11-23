@@ -31,7 +31,7 @@ Stories: US-2.3 (video upload), US-2.4 (attachments), US-5.5 (download attachmen
 sequenceDiagram
     participant W as Web app
     participant M as media module
-    participant S as MinIO
+    participant S as RustFS
     participant K as Kafka
     participant X as media-worker
     participant A as authoring module
@@ -49,7 +49,7 @@ sequenceDiagram
     K->>A: Lecture videoStatus READY or FAILED
 ```
 
-The instructor can leave the page and edit other lectures during the upload (US-2.3). An incomplete multipart upload is aborted after 24 h (MinIO lifecycle rule).
+The instructor can leave the page and edit other lectures during the upload (US-2.3). An incomplete multipart upload is aborted after 24 h (S3 lifecycle rule).
 
 ## Transcode (media-worker)
 
@@ -72,7 +72,7 @@ flowchart LR
 
 `media.api.PlaybackApi`:
 - `masterPlaylist(lectureId, viewerId)` → returns the HLS master playlist text. Each rendition URL points to `/api/v1/playback/{assetId}/{rendition}.m3u8`.
-- `renditionPlaylist(assetId, rendition, viewerId)` → returns the media playlist with each segment URL replaced by a MinIO presigned GET URL (life 4 h).
+- `renditionPlaylist(assetId, rendition, viewerId)` → returns the media playlist with each segment URL replaced by an S3 presigned GET URL (RustFS) (life 4 h).
 - `attachmentDownloadUrl(assetId)` → presigned GET, life 5 min, `Content-Disposition: attachment`.
 
 `media` does not check enrollment. `learning` checks access, then calls `PlaybackApi`. No raw MP4 URL is ever returned (US-2.3 rule).
@@ -92,7 +92,7 @@ flowchart LR
 
 `VideoUploaded(assetId, lectureId, objectKey)`, `VideoReady(assetId, lectureId, durationSeconds, renditions)`, `VideoFailed(assetId, lectureId, reason)`.
 
-## Storage (MinIO)
+## Storage (RustFS)
 
 | Bucket | Lifecycle |
 |---|---|
@@ -100,7 +100,7 @@ flowchart LR
 | `video-hls` | Keep. Delete when the lecture is deleted. |
 | `attachments` | Keep. Delete with the asset. |
 
-CORS on MinIO allows `PUT` from `http://localhost:5173` and exposes the `ETag` header.
+CORS on RustFS allows `PUT` from `http://localhost:5173` and exposes the `ETag` header.
 
 ## Frontend
 
@@ -110,7 +110,7 @@ CORS on MinIO allows `PUT` from `http://localhost:5173` and exposes the `ETag` h
 ## Testing
 
 - Domain: `startUpload_fileOver4GB_throwsRuleViolation`, `startUpload_typeAvi_listsAllowedFormats`.
-- Worker: `transcode_sampleMp4_writesThreeRenditions` with a 10 s fixture video and MinIO Testcontainer.
+- Worker: `transcode_sampleMp4_writesThreeRenditions` with a 10 s fixture video and a RustFS Testcontainer (GenericContainer with `docker.io/rustfs/rustfs:1.0.6`).
 - Worker: `transcode_textFileRenamedMp4_publishesVideoFailed`.
 - Playback: `renditionPlaylist_rewritesEverySegmentToPresignedUrl`.
 - E2E: upload a 20 MB fixture → status becomes "Ready" with duration in < 2 min locally.
@@ -122,7 +122,7 @@ CORS on MinIO allows `PUT` from `http://localhost:5173` and exposes the `ETag` h
 3. After processing, the lecture shows `READY` and the right duration (± 1 s).
 4. The HLS output plays in hls.js at 360p, 720p, and 1080p (or the source height if lower).
 5. A worker crash during transcode leads to a retry; after 3 failures the event is in the DLQ and the lecture shows `FAILED`.
-6. A segment URL stops working after its life ends (403 from MinIO).
+6. A segment URL stops working after its life ends (403 from RustFS).
 
 ## Out of Scope (Deferred)
 

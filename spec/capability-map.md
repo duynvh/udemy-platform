@@ -17,7 +17,7 @@ Inputs: [course-marketplace-plan.md](../docs/course-marketplace-plan.md), [archi
 
 1. One backend deployable (`backend/marketplace-api`) holds all business modules. The BFF is a second deployable.
 2. One React app serves student, instructor, and admin UI. Role decides the visible menu.
-3. Payment provider is Stripe in test mode. Video processing is a local FFmpeg worker that writes HLS to MinIO (no Mux account needed for local work).
+3. Payment provider is Stripe in test mode. Video processing is a local FFmpeg worker that writes HLS to RustFS (no Mux account needed for local work).
 4. Release 1 supports USD only.
 5. Modules communicate through Kafka events or a module's public `api` package. No module reads another module's tables.
 
