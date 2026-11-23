@@ -19,12 +19,16 @@ services:
       # Read by postgres/init-schemas.sql to create the application role.
       MARKETPLACE_DB_USER: ${MARKETPLACE_DB_USER:?set MARKETPLACE_DB_USER in infra/.env}
       MARKETPLACE_DB_PASSWORD: ${MARKETPLACE_DB_PASSWORD:?set MARKETPLACE_DB_PASSWORD in infra/.env}
+      # Read by postgres/init-keycloak.sql to create the Keycloak role and database.
+      KEYCLOAK_DB_USER: ${KEYCLOAK_DB_USER:?set KEYCLOAK_DB_USER in infra/.env}
+      KEYCLOAK_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?set KEYCLOAK_DB_PASSWORD in infra/.env}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
       # PostgreSQL 18 images store data in a versioned sub-folder; mount the parent folder.
       - postgres-data:/var/lib/postgresql
       - ./postgres/init-schemas.sql:/docker-entrypoint-initdb.d/10-init-schemas.sql:ro
+      - ./postgres/init-keycloak.sql:/docker-entrypoint-initdb.d/20-init-keycloak.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d marketplace"]
       interval: 5s
@@ -142,6 +146,45 @@ services:
       interval: 5s
       timeout: 5s
       retries: 20
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.2
+    # Dev mode: HTTP and no build step. --import-realm creates the realm only if it does not exist yet.
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
+      # Fixed public URL: tokens always carry issuer http://localhost:8180/realms/marketplace.
+      # Containers reach Keycloak at http://keycloak:8080 (back channel) with the same issuer.
+      KC_HOSTNAME: http://localhost:8180
+      KC_HOSTNAME_BACKCHANNEL_DYNAMIC: "true"
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN_USER:?set KEYCLOAK_ADMIN_USER in infra/.env}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?set KEYCLOAK_ADMIN_PASSWORD in infra/.env}
+      JAVA_OPTS_KC_HEAP: -Xms256m -Xmx512m
+      # Placeholders in keycloak/marketplace-realm.json; no secret is stored in Git.
+      MARKETPLACE_BFF_CLIENT_SECRET: ${MARKETPLACE_BFF_CLIENT_SECRET:?set MARKETPLACE_BFF_CLIENT_SECRET in infra/.env}
+      MARKETPLACE_TEST_STUDENT_PASSWORD: ${MARKETPLACE_TEST_STUDENT_PASSWORD:?set MARKETPLACE_TEST_STUDENT_PASSWORD in infra/.env}
+    ports:
+      - "127.0.0.1:8180:8080"
+    volumes:
+      - ./keycloak/marketplace-realm.json:/opt/keycloak/data/import/marketplace-realm.json:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # The image has no curl; send a raw HTTP request to the management port (9000, inside the container only).
+      test:
+        - CMD
+        - bash
+        - -c
+        - "exec 3<>/dev/tcp/localhost/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q UP <&3"
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
 
 volumes:
   postgres-data:

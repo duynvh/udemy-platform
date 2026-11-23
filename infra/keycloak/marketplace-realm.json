@@ -1,0 +1,80 @@
+{
+  "realm": "marketplace",
+  "displayName": "Course Marketplace",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "accessTokenLifespan": 300,
+  "roles": {
+    "realm": [
+      { "name": "student", "description": "Buys and takes courses. Every new user gets it." },
+      { "name": "instructor", "description": "Creates and publishes courses." },
+      { "name": "admin", "description": "Moderates content and users." },
+      { "name": "finance", "description": "Reviews payouts and refunds." },
+      {
+        "name": "default-roles-marketplace",
+        "description": "Roles that every new user gets.",
+        "composite": true,
+        "composites": { "realm": ["student"] }
+      }
+    ]
+  },
+  "defaultRole": {
+    "name": "default-roles-marketplace",
+    "composite": true,
+    "composites": { "realm": ["student"] }
+  },
+  "clients": [
+    {
+      "clientId": "bff-gateway",
+      "name": "BFF gateway",
+      "description": "Backend-for-Frontend. Confidential client; the browser never gets a token (ADR-007).",
+      "enabled": true,
+      "protocol": "openid-connect",
+      "publicClient": false,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${MARKETPLACE_BFF_CLIENT_SECRET}",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:8080/login/oauth2/code/keycloak"],
+      "webOrigins": ["http://localhost:8080"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-marketplace-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": {
+            "included.custom.audience": "marketplace-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false",
+            "introspection.token.claim": "true"
+          }
+        }
+      ]
+    }
+  ],
+  "users": [
+    {
+      "username": "student@local.test",
+      "email": "student@local.test",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "Local",
+      "lastName": "Student",
+      "credentials": [
+        { "type": "password", "value": "${MARKETPLACE_TEST_STUDENT_PASSWORD}", "temporary": false }
+      ],
+      "realmRoles": ["default-roles-marketplace"]
+    }
+  ]
+}

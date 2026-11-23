@@ -17,5 +17,5 @@ Phase 2 · Size S · Dependencies: T06
 **Files:**
 - `infra/compose.yaml`
 - `infra/keycloak/marketplace-realm.json`
-- `infra/postgres/init-schemas.sql` (add database `keycloak`)
+- `infra/postgres/init-keycloak.sql` (role and database `keycloak`; separate file so it can run by hand on an existing volume)
 - `infra/.env.example`
