@@ -11,11 +11,13 @@ Phase 2 · Size S · Dependencies: T06
 - [ ] The init service is idempotent: a second run exits 0 without changes.
 
 **Verification:**
-- [ ] `podman compose -f infra/compose.yaml up rustfs-init` exits 0 twice in a row
-- [ ] `podman compose -f infra/compose.yaml run --rm rustfs-init aws --endpoint-url http://rustfs:9000 s3 ls` lists the 4 buckets
+- [ ] `podman compose -f infra/compose.yaml run --rm rustfs-init` exits 0 twice in a row (do not use attached `up`: podman-compose waits for every container in the project, also RustFS)
+- [ ] `podman compose -f infra/compose.yaml run --rm --entrypoint aws rustfs-init s3 ls` lists the 4 buckets
+- [ ] Anonymous GET works only in `public-assets`; anonymous PUT and LIST return 403; CORS preflight from `http://localhost:5173` is allowed, from another origin refused
 
 **Files:**
 - `infra/compose.yaml`
 - `infra/rustfs/init-buckets.sh`
 - `infra/rustfs/cors.json`
 - `infra/rustfs/lifecycle.json`
+- `infra/rustfs/public-assets-policy.json`, `infra/rustfs/aws-config` (path-style addressing)

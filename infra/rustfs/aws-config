@@ -1,0 +1,6 @@
+# AWS CLI settings for RustFS. Path-style URLs (http://rustfs:9000/bucket/key): the host name
+# "rustfs" has no wildcard DNS, so virtual-hosted URLs (http://bucket.rustfs:9000) cannot work.
+[default]
+region = us-east-1
+s3 =
+    addressing_style = path

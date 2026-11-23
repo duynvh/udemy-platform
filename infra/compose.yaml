@@ -132,6 +132,24 @@ services:
       timeout: 5s
       retries: 20
 
+  rustfs-init:
+    # One-shot job: creates buckets, policy, CORS, and lifecycle; then exits. Safe to run again.
+    image: docker.io/amazon/aws-cli:2.42.1
+    entrypoint: ["bash", "/init/init-buckets.sh"]
+    user: "65534:65534"
+    environment:
+      HOME: /tmp
+      AWS_ACCESS_KEY_ID: ${RUSTFS_ACCESS_KEY}
+      AWS_SECRET_ACCESS_KEY: ${RUSTFS_SECRET_KEY}
+      AWS_ENDPOINT_URL: http://rustfs:9000
+      AWS_CONFIG_FILE: /init/aws-config
+    volumes:
+      - ./rustfs:/init:ro
+    depends_on:
+      rustfs:
+        condition: service_healthy
+    restart: "no"
+
   mailpit:
     image: docker.io/axllent/mailpit:v1.34.0
     # The image runs as root by default; Mailpit needs no root (ports above 1024, in-memory store).
