@@ -1,0 +1,19 @@
+# Prometheus scrape configuration (spec/SPEC-platform.md, Observability baseline).
+# The backend runs on the Windows host during development. "devhost" is an extra_hosts entry in compose.yaml
+# (Podman user-mode networking: 192.168.127.254 = Windows localhost).
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: backend
+    metrics_path: /actuator/prometheus
+    static_configs:
+      # Management port only; the API port 8090 does not expose Actuator.
+      - targets: ["devhost:8091"]
+        labels:
+          service: marketplace-api

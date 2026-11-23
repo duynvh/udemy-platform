@@ -18,7 +18,8 @@ import org.springframework.kafka.core.KafkaAdmin;
 import org.springframework.test.context.ActiveProfiles;
 
 /** The application starts against real PostgreSQL, Kafka, and Valkey, and Flyway migrates the database. */
-@SpringBootTest
+// RANDOM_PORT like PrometheusMetricsIT: the same test context configuration, so Spring reuses one context and one set of containers.
+@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Import(TestcontainersConfiguration.class)
 @ActiveProfiles("test")
 class ApplicationStartupIT {

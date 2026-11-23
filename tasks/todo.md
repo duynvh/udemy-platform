@@ -20,7 +20,7 @@ A task is done only when its learning note `docs/learn/platform/<task file name>
 - [ ] **Checkpoint 2:** ~~all services healthy < 3 min~~ ✓ (~40 s) · ~~Flyway runs~~ ✓ · ~~Testcontainers IT passes~~ ✓ · human review (open)
 
 ## Phase 3: Observability
-- [ ] [T10 Metrics path](platform/T10-metrics-path.md)
+- [x] [T10 Metrics path](platform/T10-metrics-path.md) · note: [docs/learn/platform/T10-metrics-path.md](../docs/learn/platform/T10-metrics-path.md)
 - [ ] [T11 Traces and logs path](platform/T11-traces-logs-path.md)
 - [ ] [T12 Dashboards and exporters](platform/T12-dashboards-exporters.md)
 - [ ] **Checkpoint 3:** metrics in Prometheus · trace in Tempo linked to log in Loki · human review

@@ -9,6 +9,8 @@ Phase 3 · Size M · Dependencies: T09
 - [ ] Prometheus (port 9090) scrapes the backend management port every 15 s; target is `UP`.
 - [ ] Grafana (port 3000) starts with a provisioned Prometheus data source; admin password from `infra/.env`; anonymous access off.
 
+- [ ] Prometheus reaches the backend on the Windows host as `devhost:8091` (Podman user-mode networking + `extra_hosts`).
+
 **Verification:**
 - [ ] Call `/api/v1/ping` 5 times, then in Grafana Explore: `http_server_requests_seconds_count{uri="/api/v1/ping"}` ≥ 5 (spec criterion 5, backend part)
 - [ ] `http://localhost:9090/targets` shows `backend` UP

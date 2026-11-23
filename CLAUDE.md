@@ -29,6 +29,7 @@ Run Maven commands in `backend/`. On Windows use `mvnw.cmd` in place of `./mvnw`
 
 ```text
 podman machine init --cpus 6 --memory 12288   # once; rootless works (Testcontainers verified in T09)
+podman machine set --user-mode-networking      # once, machine stopped; containers reach Windows apps as "devhost"
 podman machine start                           # stale "Currently starting"? podman machine stop, then start
 podman compose -f infra/compose.yaml run --rm rustfs-init   # buckets; one-shot (never attached "up" for jobs)
 podman compose -f infra/compose.yaml up -d          # local infrastructure (needs infra/.env from .env.example)

@@ -69,6 +69,7 @@ pip install --user podman-compose
 - WSL provider: the machine memory comes from WSL (`%USERPROFILE%\.wslconfig`), not from `--memory`. Check with `podman info --format "{{.Host.MemTotal}}"`; the stack needs about 4 GB in Phase 2 and 8 GB with observability.
 - If `podman machine list` shows "Currently starting" but `wsl -l -v` shows the machine "Stopped", the state is stale: run `podman machine stop`, then `podman machine start`.
 - Podman exposes the Docker API on `npipe:////./pipe/docker_engine`, so Docker API clients find it without `DOCKER_HOST`.
+- User-mode networking is on (`podman machine set --user-mode-networking`, decided in T10). Reason: containers must reach apps that run on Windows (backend, BFF); the Hyper-V firewall blocks WSL→Windows traffic, and the WSL NAT address changes at each boot. With user-mode networking, gvproxy maps `192.168.127.254` to Windows `localhost`. Compose services that call the host use `extra_hosts: ["devhost:192.168.127.254"]`. Do not use `host.containers.internal`: rootless pasta maps it into the WSL VM.
 - All published ports bind to `127.0.0.1`: the services are not reachable from the local network.
 
 - Rootless mode is enough (verified in T09): Testcontainers finds Podman through `npipe:////./pipe/docker_engine` without any configuration, and the Ryuk cleanup container works.

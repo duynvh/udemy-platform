@@ -38,3 +38,11 @@ management:
     web:
       exposure:
         include: health,info,prometheus
+  metrics:
+    distribution:
+      percentiles-histogram:
+        # Histogram buckets let Prometheus compute p95 latency (SLO: search p95 < 500 ms, architecture §11.3).
+        http.server.requests: true
+    tags:
+      # Every series names its service, so dashboards can filter one service.
+      application: ${spring.application.name}

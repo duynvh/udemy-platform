@@ -1,0 +1,14 @@
+# Grafana data sources, created on start (no manual setup in the UI).
+# Tempo and Loki are added by T11.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    uid: prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: false
+    jsonData:
+      timeInterval: 15s
