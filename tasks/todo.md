@@ -8,7 +8,7 @@ A task is done only when its learning note `docs/learn/platform/<task file name>
 - [x] [T01 Maven parent and wrapper](platform/T01-maven-parent.md) · note: [docs/learn/platform/T01-maven-parent.md](../docs/learn/platform/T01-maven-parent.md)
 - [x] [T02 Backend application with ping endpoint](platform/T02-backend-app.md) · note: [docs/learn/platform/T02-backend-app.md](../docs/learn/platform/T02-backend-app.md)
 - [x] [T03 Problem Details handler](platform/T03-problem-handler.md) · note: [docs/learn/platform/T03-problem-handler.md](../docs/learn/platform/T03-problem-handler.md)
-- [ ] [T04 Shared kernel types](platform/T04-shared-kernel-types.md)
+- [x] [T04 Shared kernel types](platform/T04-shared-kernel-types.md) · note: [docs/learn/platform/T04-shared-kernel-types.md](../docs/learn/platform/T04-shared-kernel-types.md)
 - [ ] [T05 Architecture tests](platform/T05-architecture-tests.md)
 - [ ] **Checkpoint 1:** `./mvnw verify` passes · health `UP` · human review
 
